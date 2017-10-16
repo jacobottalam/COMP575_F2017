@@ -371,8 +371,8 @@ void poseHandler(const std_msgs::String::ConstPtr& message)
 	global_average_headingPublish.publish(global_average_heading_msg);
 	switch(i){
 		case 0:
-			rovers[i].dist_rover1=sqrt((pow((current_location.x-rovers[1].x),2))+(pow((current_location.x-rovers[1].x),2)));
-			rovers[i].dist_rover2=sqrt((pow((current_location.x-rovers[2].x),2))+(pow((current_location.x-rovers[2].x),2)));
+			rovers[i].dist_rover1=sqrt((pow((current_location.x-rovers[1].x),2))+(pow((current_location.y-rovers[1].y),2)));
+			rovers[i].dist_rover2=sqrt((pow((current_location.x-rovers[2].x),2))+(pow((current_location.y-rovers[2].y),2)));
 			if((rovers[i].dist_rover1<=2)&&(rovers[i].dist_rover2<=2)&&(rovers[i].dist_rover1>=-2)&&(rovers[i].dist_rover2>=-2)){
 				local_rover_value.x=(rovers[1].x+rovers[2].x+current_location.x)/3;
 				local_rover_value.y=(rovers[1].y+rovers[2].y+current_location.y)/3;
@@ -393,8 +393,8 @@ void poseHandler(const std_msgs::String::ConstPtr& message)
 			local_average_headingPublish.publish(local_average_heading_msg);
 			break;
 		case 1:
-			rovers[i].dist_rover1=sqrt((pow((current_location.x-rovers[0].x),2))+(pow((current_location.x-rovers[0].x),2)));
-			rovers[i].dist_rover2=sqrt((pow((current_location.x-rovers[2].x),2))+(pow((current_location.x-rovers[2].x),2)));
+			rovers[i].dist_rover1=sqrt((pow((current_location.x-rovers[0].x),2))+(pow((current_location.y-rovers[0].y),2)));
+			rovers[i].dist_rover2=sqrt((pow((current_location.x-rovers[2].x),2))+(pow((current_location.y-rovers[2].y),2)));
 			if((rovers[i].dist_rover1<=2)&&(rovers[i].dist_rover2<=2)&&(rovers[i].dist_rover1>=-2)&&(rovers[i].dist_rover2>=-2)){
 				local_rover_value.x=(rovers[0].x+rovers[2].x+current_location.x)/3;
 				local_rover_value.y=(rovers[0].y+rovers[2].y+current_location.y)/3;
@@ -414,8 +414,8 @@ void poseHandler(const std_msgs::String::ConstPtr& message)
 			local_average_headingPublish.publish(local_average_heading_msg);
 			break;
 		case 2:
-			rovers[i].dist_rover1=sqrt((pow((current_location.x-rovers[0].x),2))+(pow((current_location.x-rovers[0].x),2)));
-			rovers[i].dist_rover2=sqrt((pow((current_location.x-rovers[1].x),2))+(pow((current_location.x-rovers[1].x),2)));
+			rovers[i].dist_rover1=sqrt((pow((current_location.x-rovers[0].x),2))+(pow((current_location.y-rovers[0].y),2)));
+			rovers[i].dist_rover2=sqrt((pow((current_location.x-rovers[1].x),2))+(pow((current_location.y-rovers[1].y),2)));
 			if((rovers[i].dist_rover1<=2)&&(rovers[i].dist_rover2<=2)&&(rovers[i].dist_rover1>=-2)&&(rovers[i].dist_rover2>=-2)){
 				local_rover_value.x=(rovers[1].x+rovers[0].x+current_location.x)/3;
 				local_rover_value.y=(rovers[1].y+rovers[0].y+current_location.y)/3;
