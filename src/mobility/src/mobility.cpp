@@ -45,6 +45,8 @@ typedef struct
 	float dist_rover2;
 }rover_pose_ori;
 
+rover_pose_ori global_rover_value = {0.0,0.0,2.4,"global",0.0,0.0};
+rover_pose_ori local_rover_value = {0.0,0.0,2.4,"local",0.0,0.0};
 
 
 string rover_name;
@@ -142,8 +144,8 @@ int main(int argc, char **argv)
     odometrySubscriber = mNH.subscribe((rover_name + "/odom/ekf"), 10, odometryHandler);
     messageSubscriber = mNH.subscribe(("messages"), 10, messageHandler);
     poseSubscriber = mNH.subscribe(("pose"), 1000, poseHandler);
-    global_average_headingSubscriber = mNH.subscribe(("global_average_heading"), 1000, poseHandler);
-    local_average_headingSubscriber = mNH.subscribe(("local_average_heading"), 1000, poseHandler);
+    global_average_headingSubscriber = mNH.subscribe(("global_average_heading"), 1000, global_average_headingHandler);
+    local_average_headingSubscriber = mNH.subscribe(("local_average_heading"), 1000, local_average_headingHandler);
 
     status_publisher = mNH.advertise<std_msgs::String>((rover_name + "/status"), 1, true);
     velocityPublish = mNH.advertise<geometry_msgs::Twist>((rover_name + "/velocity"), 10);
@@ -168,6 +170,9 @@ void mobilityStateMachine(const ros::TimerEvent &)
 {
     std_msgs::String state_machine_msg;
     std_msgs::String pose_msg;
+    float kp=.1;
+    float angular_velocity = 0;
+    float linear_velocity = 0;
 
     if ((simulation_mode == 2 || simulation_mode == 3)) // Robot is in automode
     {
@@ -181,11 +186,13 @@ void mobilityStateMachine(const ros::TimerEvent &)
         {
         case STATE_MACHINE_TRANSLATE:
         {
+            //angular_velocity = kp*(local_rover_value.theta- current_location.theta);
+            	angular_velocity = kp*(global_rover_value.theta- current_location.theta);
             state_machine_msg.data = "TRANSLATING";//, " + converter.str();
-            float angular_velocity = 0.2;
-            float linear_velocity = 0.1;
+            //angular_velocity = 0.2;
+            linear_velocity = 0.0;
             setVelocity(linear_velocity, angular_velocity);
-            break;
+    break;
         }
         default:
         {
@@ -319,8 +326,6 @@ void poseHandler(const std_msgs::String::ConstPtr& message)
 	size_t pos = 0;
 	std_msgs::String global_average_heading_msg;
 	std_msgs::String local_average_heading_msg;
-	rover_pose_ori global_rover_value;
-	rover_pose_ori local_rover_value;
 	int i=0,dist_between;
 	std::stringstream converter;
 	std::stringstream converter1;
