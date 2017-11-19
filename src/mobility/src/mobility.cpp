@@ -40,13 +40,17 @@ typedef struct
 	float x;
 	float y;
 	float theta;
-	string name;
 	float dist_rover1;
 	float dist_rover2;
+	float dist_rover3;
+	float dist_rover4;
+	float dist_rover5;
+	string name;
 }rover_pose_ori;
 
-rover_pose_ori global_rover_value = {0.0,0.0,2.4,"global",0.0,0.0};
-rover_pose_ori local_rover_value = {0.0,0.0,2.4,"local",0.0,0.0};
+rover_pose_ori global_rover_value = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"global"};
+rover_pose_ori local_rover_value = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"local"};
+float theta_from_global_pos=0.0;
 
 
 string rover_name;
@@ -60,6 +64,7 @@ float status_publish_interval = 5;
 float kill_switch_timeout = 10;
 
 pose current_location;
+pose check_location;
 
 int transitions_to_auto = 0;
 double time_stamp_transition_to_auto = 0.0;
@@ -186,11 +191,16 @@ void mobilityStateMachine(const ros::TimerEvent &)
         {
         case STATE_MACHINE_TRANSLATE:
         {
+		check_location.x=current_location.x-local_rover_value.x;
+		check_location.y=current_location.y-local_rover_value.y;
+		theta_from_global_pos=atan2(check_location.y,check_location.x);
+		//theta_from_global_pos=atan2(global_rover_value.y,global_rover_value.x);
             //angular_velocity = kp*(local_rover_value.theta- current_location.theta);
-            	angular_velocity = kp*(global_rover_value.theta- current_location.theta);
+            	//angular_velocity = kp*(global_rover_value.theta- current_location.theta);
+            	angular_velocity = kp*(theta_from_global_pos- current_location.theta);
             state_machine_msg.data = "TRANSLATING";//, " + converter.str();
             //angular_velocity = 0.2;
-            linear_velocity = 0.0;
+            linear_velocity = 0.01;
             setVelocity(linear_velocity, angular_velocity);
     break;
         }
@@ -326,21 +336,24 @@ void poseHandler(const std_msgs::String::ConstPtr& message)
 	size_t pos = 0;
 	std_msgs::String global_average_heading_msg;
 	std_msgs::String local_average_heading_msg;
-	int i=0,dist_between;
+	int i=0,dist_between,count=0;
 	std::stringstream converter;
 	std::stringstream converter1;
 	std::stringstream converter2;
 	converter << message->data;
 	std::string message1 = converter.str();
-	rover_pose_ori rovers[3];
+	rover_pose_ori rovers[6];
 	std::string delimiter = " ";
 	std::string token;
 	rovers[0].name= "ajax";
 	rovers[1].name= "achilles";
 	rovers[2].name= "aeneas";
+	rovers[3].name= "diomedes";
+	rovers[4].name= "hector";
+	rovers[5].name= "paris";
 	pos = message1.find(delimiter);
 	token = message1.substr(0, pos);
-	for(i=0;i<3;i++){
+	for(i=0;i<6;i++){
 		if (token.compare(rovers[i].name)==0)
 			break;
 	}
@@ -367,77 +380,291 @@ void poseHandler(const std_msgs::String::ConstPtr& message)
 		rovers[i].theta=atof(token.c_str());
 	}
 	global_rover_value.name="global";
-	global_rover_value.x=(rovers[1].x+rovers[2].x+rovers[0].x)/3;
-	global_rover_value.y=(rovers[1].y+rovers[2].y+rovers[0].y)/3;
-	global_rover_value.theta=atan2((sin(rovers[0].theta)+sin(rovers[1].theta)+sin(rovers[2].theta))/3,(cos(rovers[0].theta)+cos(rovers[1].theta)+cos(rovers[2].theta))/3);
+	global_rover_value.x=(rovers[1].x+rovers[2].x+rovers[0].x+rovers[3].x+rovers[4].x+rovers[5].x)/6;
+	global_rover_value.y=(rovers[1].y+rovers[2].y+rovers[0].y+rovers[3].y+rovers[4].y+rovers[5].y)/6;
+	global_rover_value.theta=atan2(sin(rovers[0].theta)+sin(rovers[1].theta)+sin(rovers[2].theta)+sin(rovers[3].theta)+sin(rovers[4].theta)+sin(rovers[5].theta),cos(rovers[0].theta)+cos(rovers[1].theta)+cos(rovers[2].theta)+cos(rovers[3].theta)+cos(rovers[4].theta)+cos(rovers[5].theta));
 	converter1 << global_rover_value.name << " " << global_rover_value.x << " " << global_rover_value.y << " " << global_rover_value.theta;
 	global_average_heading_msg.data = converter1.str();	
 	//global_average_heading_msg.data = message1;	
 	global_average_headingPublish.publish(global_average_heading_msg);
+	local_rover_value.x=0;
+	local_rover_value.y=0;
 	switch(i){
 		case 0:
 			rovers[i].dist_rover1=sqrt((pow((current_location.x-rovers[1].x),2))+(pow((current_location.y-rovers[1].y),2)));
 			rovers[i].dist_rover2=sqrt((pow((current_location.x-rovers[2].x),2))+(pow((current_location.y-rovers[2].y),2)));
-			if((rovers[i].dist_rover1<=2)&&(rovers[i].dist_rover2<=2)){
-				local_rover_value.x=(rovers[1].x+rovers[2].x+current_location.x)/3;
-				local_rover_value.y=(rovers[1].y+rovers[2].y+current_location.y)/3;
-				local_rover_value.theta=atan2((sin(current_location.theta)+sin(rovers[1].theta)+sin(rovers[2].theta))/3,(cos(current_location.theta)+cos(rovers[1].theta)+cos(rovers[2].theta))/3);
-
-			}else if((rovers[i].dist_rover1<=2)){
-				local_rover_value.x=(rovers[1].x+current_location.x)/2;
-				local_rover_value.y=(rovers[1].y+current_location.y)/2;
-				local_rover_value.theta=atan2((sin(current_location.theta)+sin(rovers[1].theta))/2,(cos(current_location.theta)+cos(rovers[1].theta))/2);
-			}else if((rovers[i].dist_rover2<=2)){
-				local_rover_value.x=(rovers[2].x+current_location.x)/2;
-				local_rover_value.y=(rovers[2].y+current_location.y)/2;
-				local_rover_value.theta=atan2((sin(current_location.theta)+sin(rovers[2].theta))/2,(cos(current_location.theta)+cos(rovers[2].theta))/2);
+			rovers[i].dist_rover3=sqrt((pow((current_location.x-rovers[3].x),2))+(pow((current_location.y-rovers[3].y),2)));
+			rovers[i].dist_rover4=sqrt((pow((current_location.x-rovers[4].x),2))+(pow((current_location.y-rovers[4].y),2)));
+			rovers[i].dist_rover5=sqrt((pow((current_location.x-rovers[5].x),2))+(pow((current_location.y-rovers[5].y),2)));
+			if(rovers[i].dist_rover1<=2){
+				local_rover_value.x=rovers[1].x;
+				local_rover_value.y=rovers[1].y;
+				local_rover_value.theta= atan2(sin(rovers[1].theta),cos(rovers[1].theta));
+				count++;
 			}
+			if(rovers[i].dist_rover2<=2){
+				local_rover_value.x=local_rover_value.x+rovers[2].x;
+				local_rover_value.y=local_rover_value.y+rovers[2].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[2].theta),cos(local_rover_value.theta)+cos(rovers[2].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover3<=2){
+				local_rover_value.x=local_rover_value.x+rovers[3].x;
+				local_rover_value.y=local_rover_value.y+rovers[3].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[3].theta),cos(local_rover_value.theta)+cos(rovers[3].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover4<=2){
+				local_rover_value.x=local_rover_value.x+rovers[4].x;
+				local_rover_value.y=local_rover_value.y+rovers[4].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[4].theta),cos(local_rover_value.theta)+cos(rovers[4].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover5<=2){
+				local_rover_value.x=local_rover_value.x+rovers[5].x;
+				local_rover_value.y=local_rover_value.y+rovers[5].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[5].theta),cos(local_rover_value.theta)+cos(rovers[5].theta));
+				count++;
+			}
+				count++;
+				local_rover_value.x=(local_rover_value.x+current_location.x)/count;
+				local_rover_value.y=(local_rover_value.y+current_location.y)/count;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(current_location.theta),cos(local_rover_value.theta)+cos(current_location.theta));
 				local_rover_value.name="local";
 			converter2 << local_rover_value.name << " " << local_rover_value.x << " " << local_rover_value.y << " " << local_rover_value.theta;
 			local_average_heading_msg.data = converter2.str();	
 			local_average_headingPublish.publish(local_average_heading_msg);
+			count=0;
 			break;
 		case 1:
 			rovers[i].dist_rover1=sqrt((pow((current_location.x-rovers[0].x),2))+(pow((current_location.y-rovers[0].y),2)));
 			rovers[i].dist_rover2=sqrt((pow((current_location.x-rovers[2].x),2))+(pow((current_location.y-rovers[2].y),2)));
-			if((rovers[i].dist_rover1<=2)&&(rovers[i].dist_rover2<=2)){
-				local_rover_value.x=(rovers[0].x+rovers[2].x+current_location.x)/3;
-				local_rover_value.y=(rovers[0].y+rovers[2].y+current_location.y)/3;
-				local_rover_value.theta=atan2((sin(current_location.theta)+sin(rovers[0].theta)+sin(rovers[2].theta))/3,(cos(current_location.theta)+cos(rovers[0].theta)+cos(rovers[2].theta))/3);
-			}else if((rovers[i].dist_rover1<=2)){
-				local_rover_value.x=(rovers[0].x+current_location.x)/2;
-				local_rover_value.y=(rovers[0].y+current_location.y)/2;
-				local_rover_value.theta=atan2((sin(current_location.theta)+sin(rovers[0].theta))/2,(cos(current_location.theta)+cos(rovers[0].theta))/2);
-			}else if((rovers[i].dist_rover2<=2)){
-				local_rover_value.x=(rovers[2].x+current_location.x)/2;
-				local_rover_value.y=(rovers[2].y+current_location.y)/2;
-				local_rover_value.theta=atan2((sin(current_location.theta)+sin(rovers[2].theta))/2,(cos(current_location.theta)+cos(rovers[2].theta))/2);
+			rovers[i].dist_rover3=sqrt((pow((current_location.x-rovers[3].x),2))+(pow((current_location.y-rovers[3].y),2)));
+			rovers[i].dist_rover4=sqrt((pow((current_location.x-rovers[4].x),2))+(pow((current_location.y-rovers[4].y),2)));
+			rovers[i].dist_rover5=sqrt((pow((current_location.x-rovers[5].x),2))+(pow((current_location.y-rovers[5].y),2)));
+			if(rovers[i].dist_rover1<=2){
+				local_rover_value.x=rovers[0].x;
+				local_rover_value.y=rovers[0].y;
+				local_rover_value.theta= atan2(sin(rovers[0].theta),cos(rovers[0].theta));
+				count++;
 			}
+			if(rovers[i].dist_rover2<=2){
+				local_rover_value.x=local_rover_value.x+rovers[2].x;
+				local_rover_value.y=local_rover_value.y+rovers[2].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[2].theta),cos(local_rover_value.theta)+cos(rovers[2].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover3<=2){
+				local_rover_value.x=local_rover_value.x+rovers[3].x;
+				local_rover_value.y=local_rover_value.y+rovers[3].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[3].theta),cos(local_rover_value.theta)+cos(rovers[3].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover4<=2){
+				local_rover_value.x=local_rover_value.x+rovers[4].x;
+				local_rover_value.y=local_rover_value.y+rovers[4].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[4].theta),cos(local_rover_value.theta)+cos(rovers[4].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover5<=2){
+				local_rover_value.x=local_rover_value.x+rovers[5].x;
+				local_rover_value.y=local_rover_value.y+rovers[5].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[5].theta),cos(local_rover_value.theta)+cos(rovers[5].theta));
+				count++;
+			}
+				count++;
+				local_rover_value.x=(local_rover_value.x+current_location.x)/count;
+				local_rover_value.y=(local_rover_value.y+current_location.y)/count;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(current_location.theta),cos(local_rover_value.theta)+cos(current_location.theta));
 				local_rover_value.name="local";
 			converter2 << local_rover_value.name << " " << local_rover_value.x << " " << local_rover_value.y << " " << local_rover_value.theta;
 			local_average_heading_msg.data = converter2.str();	
 			local_average_headingPublish.publish(local_average_heading_msg);
+			count=0;
 			break;
 		case 2:
 			rovers[i].dist_rover1=sqrt((pow((current_location.x-rovers[0].x),2))+(pow((current_location.y-rovers[0].y),2)));
 			rovers[i].dist_rover2=sqrt((pow((current_location.x-rovers[1].x),2))+(pow((current_location.y-rovers[1].y),2)));
-			if((rovers[i].dist_rover1<=2)&&(rovers[i].dist_rover2<=2)){
-				local_rover_value.x=(rovers[1].x+rovers[0].x+current_location.x)/3;
-				local_rover_value.y=(rovers[1].y+rovers[0].y+current_location.y)/3;
-				local_rover_value.theta=atan2((sin(current_location.theta)+sin(rovers[1].theta)+sin(rovers[0].theta))/3,(cos(current_location.theta)+cos(rovers[1].theta)+cos(rovers[0].theta))/3);
-			}else if((rovers[i].dist_rover1<=2)){
-				local_rover_value.x=(rovers[0].x+current_location.x)/2;
-				local_rover_value.y=(rovers[0].y+current_location.y)/2;
-				local_rover_value.theta=atan2((sin(current_location.theta)+sin(rovers[0].theta))/2,(cos(current_location.theta)+cos(rovers[0].theta))/2);
-			}else if((rovers[i].dist_rover2<=2)){
-				local_rover_value.x=(rovers[1].x+current_location.x)/2;
-				local_rover_value.y=(rovers[1].y+current_location.y)/2;
-				local_rover_value.theta=atan2((sin(current_location.theta)+sin(rovers[1].theta))/2,(cos(current_location.theta)+cos(rovers[1].theta))/2);
+			rovers[i].dist_rover3=sqrt((pow((current_location.x-rovers[3].x),2))+(pow((current_location.y-rovers[3].y),2)));
+			rovers[i].dist_rover4=sqrt((pow((current_location.x-rovers[4].x),2))+(pow((current_location.y-rovers[4].y),2)));
+			rovers[i].dist_rover5=sqrt((pow((current_location.x-rovers[5].x),2))+(pow((current_location.y-rovers[5].y),2)));
+			if(rovers[i].dist_rover1<=2){
+				local_rover_value.x=rovers[0].x;
+				local_rover_value.y=rovers[0].y;
+				local_rover_value.theta= atan2(sin(rovers[0].theta),cos(rovers[0].theta));
+				count++;
 			}
+			if(rovers[i].dist_rover2<=2){
+				local_rover_value.x=local_rover_value.x+rovers[1].x;
+				local_rover_value.y=local_rover_value.y+rovers[1].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[1].theta),cos(local_rover_value.theta)+cos(rovers[1].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover3<=2){
+				local_rover_value.x=local_rover_value.x+rovers[3].x;
+				local_rover_value.y=local_rover_value.y+rovers[3].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[3].theta),cos(local_rover_value.theta)+cos(rovers[3].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover4<=2){
+				local_rover_value.x=local_rover_value.x+rovers[4].x;
+				local_rover_value.y=local_rover_value.y+rovers[4].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[4].theta),cos(local_rover_value.theta)+cos(rovers[4].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover5<=2){
+				local_rover_value.x=local_rover_value.x+rovers[5].x;
+				local_rover_value.y=local_rover_value.y+rovers[5].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[5].theta),cos(local_rover_value.theta)+cos(rovers[5].theta));
+				count++;
+			}
+				count++;
+				local_rover_value.x=(local_rover_value.x+current_location.x)/count;
+				local_rover_value.y=(local_rover_value.y+current_location.y)/count;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(current_location.theta),cos(local_rover_value.theta)+cos(current_location.theta));
 				local_rover_value.name="local";
 			converter2 << local_rover_value.name << " " << local_rover_value.x << " " << local_rover_value.y << " " << local_rover_value.theta;
 			local_average_heading_msg.data = converter2.str();	
 			local_average_headingPublish.publish(local_average_heading_msg);
+			count=0;
+			break;
+		case 3:
+			rovers[i].dist_rover1=sqrt((pow((current_location.x-rovers[0].x),2))+(pow((current_location.y-rovers[0].y),2)));
+			rovers[i].dist_rover2=sqrt((pow((current_location.x-rovers[1].x),2))+(pow((current_location.y-rovers[1].y),2)));
+			rovers[i].dist_rover3=sqrt((pow((current_location.x-rovers[2].x),2))+(pow((current_location.y-rovers[2].y),2)));
+			rovers[i].dist_rover4=sqrt((pow((current_location.x-rovers[4].x),2))+(pow((current_location.y-rovers[4].y),2)));
+			rovers[i].dist_rover5=sqrt((pow((current_location.x-rovers[5].x),2))+(pow((current_location.y-rovers[5].y),2)));
+			if(rovers[i].dist_rover1<=2){
+				local_rover_value.x=rovers[0].x;
+				local_rover_value.y=rovers[0].y;
+				local_rover_value.theta= atan2(sin(rovers[0].theta),cos(rovers[0].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover2<=2){
+				local_rover_value.x=local_rover_value.x+rovers[1].x;
+				local_rover_value.y=local_rover_value.y+rovers[1].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[1].theta),cos(local_rover_value.theta)+cos(rovers[1].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover3<=2){
+				local_rover_value.x=local_rover_value.x+rovers[2].x;
+				local_rover_value.y=local_rover_value.y+rovers[2].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[2].theta),cos(local_rover_value.theta)+cos(rovers[2].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover4<=2){
+				local_rover_value.x=local_rover_value.x+rovers[4].x;
+				local_rover_value.y=local_rover_value.y+rovers[4].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[4].theta),cos(local_rover_value.theta)+cos(rovers[4].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover5<=2){
+				local_rover_value.x=local_rover_value.x+rovers[5].x;
+				local_rover_value.y=local_rover_value.y+rovers[5].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[5].theta),cos(local_rover_value.theta)+cos(rovers[5].theta));
+				count++;
+			}
+				count++;
+				local_rover_value.x=(local_rover_value.x+current_location.x)/count;
+				local_rover_value.y=(local_rover_value.y+current_location.y)/count;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(current_location.theta),cos(local_rover_value.theta)+cos(current_location.theta));
+				local_rover_value.name="local";
+			converter2 << local_rover_value.name << " " << local_rover_value.x << " " << local_rover_value.y << " " << local_rover_value.theta;
+			local_average_heading_msg.data = converter2.str();	
+			local_average_headingPublish.publish(local_average_heading_msg);
+			count=0;
+			break;
+		case 4:
+			rovers[i].dist_rover1=sqrt((pow((current_location.x-rovers[0].x),2))+(pow((current_location.y-rovers[0].y),2)));
+			rovers[i].dist_rover2=sqrt((pow((current_location.x-rovers[1].x),2))+(pow((current_location.y-rovers[1].y),2)));
+			rovers[i].dist_rover3=sqrt((pow((current_location.x-rovers[2].x),2))+(pow((current_location.y-rovers[2].y),2)));
+			rovers[i].dist_rover4=sqrt((pow((current_location.x-rovers[3].x),2))+(pow((current_location.y-rovers[3].y),2)));
+			rovers[i].dist_rover5=sqrt((pow((current_location.x-rovers[5].x),2))+(pow((current_location.y-rovers[5].y),2)));
+			if(rovers[i].dist_rover1<=2){
+				local_rover_value.x=rovers[0].x;
+				local_rover_value.y=rovers[0].y;
+				local_rover_value.theta= atan2(sin(rovers[0].theta),cos(rovers[0].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover2<=2){
+				local_rover_value.x=local_rover_value.x+rovers[1].x;
+				local_rover_value.y=local_rover_value.y+rovers[1].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[1].theta),cos(local_rover_value.theta)+cos(rovers[1].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover3<=2){
+				local_rover_value.x=local_rover_value.x+rovers[2].x;
+				local_rover_value.y=local_rover_value.y+rovers[2].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[2].theta),cos(local_rover_value.theta)+cos(rovers[2].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover4<=2){
+				local_rover_value.x=local_rover_value.x+rovers[3].x;
+				local_rover_value.y=local_rover_value.y+rovers[3].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[3].theta),cos(local_rover_value.theta)+cos(rovers[3].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover5<=2){
+				local_rover_value.x=local_rover_value.x+rovers[5].x;
+				local_rover_value.y=local_rover_value.y+rovers[5].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[5].theta),cos(local_rover_value.theta)+cos(rovers[5].theta));
+				count++;
+			}
+				count++;
+				local_rover_value.x=(local_rover_value.x+current_location.x)/count;
+				local_rover_value.y=(local_rover_value.y+current_location.y)/count;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(current_location.theta),cos(local_rover_value.theta)+cos(current_location.theta));
+				local_rover_value.name="local";
+			converter2 << local_rover_value.name << " " << local_rover_value.x << " " << local_rover_value.y << " " << local_rover_value.theta;
+			local_average_heading_msg.data = converter2.str();	
+			local_average_headingPublish.publish(local_average_heading_msg);
+			count=0;
+			break;
+		case 5:
+			rovers[i].dist_rover1=sqrt((pow((current_location.x-rovers[0].x),2))+(pow((current_location.y-rovers[0].y),2)));
+			rovers[i].dist_rover2=sqrt((pow((current_location.x-rovers[1].x),2))+(pow((current_location.y-rovers[1].y),2)));
+			rovers[i].dist_rover3=sqrt((pow((current_location.x-rovers[2].x),2))+(pow((current_location.y-rovers[2].y),2)));
+			rovers[i].dist_rover4=sqrt((pow((current_location.x-rovers[3].x),2))+(pow((current_location.y-rovers[3].y),2)));
+			rovers[i].dist_rover5=sqrt((pow((current_location.x-rovers[4].x),2))+(pow((current_location.y-rovers[4].y),2)));
+			if(rovers[i].dist_rover1<=2){
+				local_rover_value.x=rovers[0].x;
+				local_rover_value.y=rovers[0].y;
+				local_rover_value.theta= atan2(sin(rovers[0].theta),cos(rovers[0].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover2<=2){
+				local_rover_value.x=local_rover_value.x+rovers[1].x;
+				local_rover_value.y=local_rover_value.y+rovers[1].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[1].theta),cos(local_rover_value.theta)+cos(rovers[1].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover3<=2){
+				local_rover_value.x=local_rover_value.x+rovers[2].x;
+				local_rover_value.y=local_rover_value.y+rovers[2].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[2].theta),cos(local_rover_value.theta)+cos(rovers[2].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover4<=2){
+				local_rover_value.x=local_rover_value.x+rovers[3].x;
+				local_rover_value.y=local_rover_value.y+rovers[3].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[3].theta),cos(local_rover_value.theta)+cos(rovers[3].theta));
+				count++;
+			}
+			if(rovers[i].dist_rover5<=2){
+				local_rover_value.x=local_rover_value.x+rovers[4].x;
+				local_rover_value.y=local_rover_value.y+rovers[4].y;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(rovers[4].theta),cos(local_rover_value.theta)+cos(rovers[4].theta));
+				count++;
+			}
+				count++;
+				local_rover_value.x=(local_rover_value.x+current_location.x)/count;
+				local_rover_value.y=(local_rover_value.y+current_location.y)/count;
+				local_rover_value.theta= atan2(sin(local_rover_value.theta)+sin(current_location.theta),cos(local_rover_value.theta)+cos(current_location.theta));
+				local_rover_value.name="local";
+			converter2 << local_rover_value.name << " " << local_rover_value.x << " " << local_rover_value.y << " " << local_rover_value.theta;
+			local_average_heading_msg.data = converter2.str();	
+			local_average_headingPublish.publish(local_average_heading_msg);
+			count=0;
 			break;
 		default:
 			cout << "no valid case";

@@ -1051,7 +1051,7 @@ void RoverGUIPlugin::buildSimulationButtonEventHandler()
     progress_dialog.show();
 
     displayLogMessage("Adding rover achilles...");
-    return_msg = sim_mgr.addRover("achilles", 0, 1, 0);
+    return_msg = sim_mgr.addRover("achilles", 1 ,0.5, 0);
     displayLogMessage(return_msg);
 
     displayLogMessage("Starting rover node for achilles...");
@@ -1062,7 +1062,7 @@ void RoverGUIPlugin::buildSimulationButtonEventHandler()
     qApp->processEvents(QEventLoop::ExcludeUserInputEvents);
 
     displayLogMessage("Adding rover aeneas...");
-    return_msg = sim_mgr.addRover("aeneas", -1, 0, 0);
+    return_msg = sim_mgr.addRover("aeneas", 0, 1, 0);
     displayLogMessage(return_msg);
 
     displayLogMessage("Starting rover node for aeneas...");
@@ -1073,7 +1073,7 @@ void RoverGUIPlugin::buildSimulationButtonEventHandler()
     qApp->processEvents(QEventLoop::ExcludeUserInputEvents);
 
     displayLogMessage("Adding rover ajax...");
-    return_msg = sim_mgr.addRover("ajax", 1, 0, 0);
+    return_msg = sim_mgr.addRover("ajax", -1, 0.5, 0);
     displayLogMessage(return_msg);
 
    displayLogMessage("Starting rover node for ajax...");
@@ -1087,7 +1087,7 @@ void RoverGUIPlugin::buildSimulationButtonEventHandler()
    {
 
        displayLogMessage("Adding rover diomedes...");
-       return_msg = sim_mgr.addRover("diomedes", 1, 1, 0);
+       return_msg = sim_mgr.addRover("diomedes", -1, -0.5, 0);
        displayLogMessage(return_msg);
 
        displayLogMessage("Starting rover node for diomedes...");
@@ -1098,7 +1098,7 @@ void RoverGUIPlugin::buildSimulationButtonEventHandler()
        qApp->processEvents(QEventLoop::ExcludeUserInputEvents);
 
        displayLogMessage("Adding rover hector...");
-       return_msg = sim_mgr.addRover("hector", -1, -1, 0);
+       return_msg = sim_mgr.addRover("hector", 0, -1, 0);
        displayLogMessage(return_msg);
 
        displayLogMessage("Starting rover node for hector...");
@@ -1109,7 +1109,7 @@ void RoverGUIPlugin::buildSimulationButtonEventHandler()
         qApp->processEvents(QEventLoop::ExcludeUserInputEvents);
 
        displayLogMessage("Adding rover paris...");
-       return_msg = sim_mgr.addRover("paris", 1, -1, 0);
+       return_msg = sim_mgr.addRover("paris", 1, -0.5, 0);
        displayLogMessage(return_msg);
 
        displayLogMessage("Starting rover node for paris...");
