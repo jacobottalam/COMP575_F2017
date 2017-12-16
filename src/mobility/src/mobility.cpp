@@ -47,6 +47,7 @@ using namespace std;
 // Random number generator
 random_numbers::RandomNumberGenerator *rng;
 
+// Change for Leader Homework4
 typedef struct{
 	int id;
 	string name;	
@@ -58,6 +59,9 @@ rovers_leader rover_leader={0,"rover",2};
 rovers_leader rovers_l1[6]={{0,"ajax",2},{0,"achilles",2},{0,"aeneas",2},{0,"diomedes",2},{0,"hector",2},{0,"paris",2}};
 
 int round_count=0;
+
+// Change for Leader Homework4
+
 
 typedef struct
 {
@@ -105,8 +109,10 @@ ros::Publisher status_publisher;
 ros::Publisher target_collected_publisher;
 ros::Publisher angular_publisher;
 ros::Publisher messagePublish;
+// Change for Leader Homework4
 ros::Publisher leader_msgPublish;
 ros::Publisher leader_statusPublish;
+// Change for Leader Homework4
 ros::Publisher posePublish;
 ros::Publisher global_average_headingPublish;
 ros::Publisher local_average_headingPublish;
@@ -118,8 +124,10 @@ ros::Subscriber modeSubscriber;
 ros::Subscriber targetSubscriber;
 ros::Subscriber obstacleSubscriber;
 ros::Subscriber odometrySubscriber;
+// Change for Leader Homework4
 ros::Subscriber leader_msgSubscriber;
 ros::Subscriber leader_statusSubscriber;
+// Change for Leader Homework4
 ros::Subscriber poseSubscriber;
 ros::Subscriber global_average_headingSubscriber;
 ros::Subscriber local_average_headingSubscriber;
@@ -146,8 +154,10 @@ void mobilityStateMachine(const ros::TimerEvent &);
 void publishStatusTimerEventHandler(const ros::TimerEvent &event);
 void killSwitchTimerEventHandler(const ros::TimerEvent &event);
 void messageHandler(const std_msgs::String::ConstPtr &message);
+// Change for Leader Homework4
 void leader_msgHandler(const std_msgs::String::ConstPtr &message);
 void leader_statusHandler(const std_msgs::String::ConstPtr &message);
+// Change for Leader Homework4
 void poseHandler(const std_msgs::String::ConstPtr &message);
 void global_average_headingHandler(const std_msgs::String::ConstPtr &message);
 void local_average_headingHandler(const std_msgs::String::ConstPtr &message);
@@ -179,8 +189,10 @@ int main(int argc, char **argv)
     obstacleSubscriber = mNH.subscribe((rover_name + "/obstacle"), 10, obstacleHandler);
     odometrySubscriber = mNH.subscribe((rover_name + "/odom/ekf"), 10, odometryHandler);
     messageSubscriber = mNH.subscribe(("messages"), 10, messageHandler);
+// Change for Leader Homework4
     leader_msgSubscriber = mNH.subscribe(("leader_msg"), 1000, leader_msgHandler);
     leader_statusSubscriber = mNH.subscribe(("leader_status"), 1000, leader_statusHandler);
+// Change for Leader Homework4
     poseSubscriber = mNH.subscribe(("pose"), 1000, poseHandler);
     global_average_headingSubscriber = mNH.subscribe(("global_average_heading"), 1000, global_average_headingHandler);
     local_average_headingSubscriber = mNH.subscribe(("local_average_heading"), 1000, local_average_headingHandler);
@@ -196,12 +208,15 @@ int main(int argc, char **argv)
     stateMachineTimer = mNH.createTimer(ros::Duration(mobility_loop_time_step), mobilityStateMachine);
     debug_publisher = mNH.advertise<std_msgs::String>("/debug", 1, true);
     messagePublish = mNH.advertise<std_msgs::String>(("messages"), 10 , true);
+// Change for Leader Homework4
     leader_msgPublish = mNH.advertise<std_msgs::String>(("leader_msg"), 1000 , true);
     leader_statusPublish = mNH.advertise<std_msgs::String>(("leader_status"), 1000 , true);
+// Change for Leader Homework4
     posePublish = mNH.advertise<std_msgs::String>(("pose"), 1000 , true);
     global_average_headingPublish = mNH.advertise<std_msgs::String>(("global_average_heading"), 1000 , true);
     local_average_headingPublish = mNH.advertise<std_msgs::String>(("local_average_heading"), 1000 , true);
     
+// Change for Leader Homework4
 //	srand(time(0));
 	if (!rover_name.compare("ajax"))
 		rovers_l.id=1;
@@ -221,6 +236,7 @@ int main(int argc, char **argv)
 	rover_leader.name=rover_name;
 //	rovers_l.id=rand()%6+1;
 	rover_leader.leader=2;
+// Change for Leader Homework4
     ros::spin();
     return EXIT_SUCCESS;
 }
@@ -271,6 +287,7 @@ void mobilityStateMachine(const ros::TimerEvent &)
     }
     stateMachinePublish.publish(state_machine_msg);
         //pose_msg.data = "I am ";
+// Change for Leader Homework4
     if ((simulation_mode == 2 || simulation_mode == 3)) // Robot is in automode
 {
 	leader_msg.data=rover_name ;
@@ -279,6 +296,7 @@ void mobilityStateMachine(const ros::TimerEvent &)
 	leader_msg.data = leader_msg.data + converter2.str();
     	leader_msgPublish.publish(leader_msg);
 }
+// Change for Leader Homework4
         pose_msg.data = rover_name;
         std::stringstream converter;
         converter << " " << current_location.x << " " << current_location.y << " " << current_location.theta;
@@ -728,6 +746,7 @@ void global_average_headingHandler(const std_msgs::String::ConstPtr& message)
 void local_average_headingHandler(const std_msgs::String::ConstPtr& message)
 {
 }
+// Change for Leader Homework4
 void leader_msgHandler(const std_msgs::String::ConstPtr& message)
 {
 	size_t pos = 0;
@@ -790,3 +809,5 @@ if ( rover_leader.id>rovers_l.id){
 void leader_statusHandler(const std_msgs::String::ConstPtr& message)
 {
 }
+
+// Change for Leader Homework4
