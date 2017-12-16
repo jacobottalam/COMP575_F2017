@@ -47,7 +47,7 @@ typedef struct
 	float dist_rover5;
 	string name;
 }rover_pose_ori;
-
+//Change for Homework4 Question 2
 rover_pose_ori global_rover_value = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"global"};
 rover_pose_ori local_rover_value = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"local"};
 rover_pose_ori local_rover_cohesion = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"coshesion"};
@@ -56,6 +56,7 @@ rover_pose_ori rovers[6]={{0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,"ajax"},{0.0,0.0,0.0,
 float theta_from_global_pos=0.0;
 float theta_from_average_pos=0.0;
 
+//Change for Homework4 Question 2
 
 string rover_name;
 char host[128];
@@ -68,10 +69,12 @@ float status_publish_interval = 5;
 float kill_switch_timeout = 10;
 
 pose current_location;
+//Change for Homework4 Question 2
 pose average_location;
 pose cohesion_location;
 pose combined_location;
 
+//Change for Homework4 Question 2
 int transitions_to_auto = 0;
 double time_stamp_transition_to_auto = 0.0;
 
@@ -203,10 +206,12 @@ void mobilityStateMachine(const ros::TimerEvent &)
 					cohesion_location.x=current_location.x-local_rover_cohesion.x;
 					cohesion_location.y=current_location.y-local_rover_cohesion.y;
 					theta_from_global_pos=atan2(cohesion_location.y,cohesion_location.x);*/
+//Change for Homework4 Question 2
 					combined_location.x= (local_rover_value.x+local_rover_cohesion.x+local_rover_seperation.x)/3;
 					combined_location.y=(local_rover_value.y+local_rover_cohesion.y+local_rover_seperation.y)/3;
 					theta_from_global_pos=atan2(combined_location.y,combined_location.x);
 					angular_velocity = kp*(theta_from_global_pos-current_location.theta);
+//Change for Homework4 Question 2
 					//average_location.x=current_location.x-global_rover_value.x;
 					//average_location.y=current_location.y-global_rover_value.y;
 					//theta_from_average_pos=atan2(average_location.y,average_location.x);
@@ -401,6 +406,7 @@ void poseHandler(const std_msgs::String::ConstPtr& message)
 	local_rover_cohesion.y=0;
 	local_rover_seperation.x=0;
 	local_rover_seperation.y=0;
+//Change for Homework4 Question 2
 	switch(i){
 		case 0:
 			rovers[i].dist_rover1=sqrt((pow((current_location.x-rovers[1].x),2))+(pow((current_location.y-rovers[1].y),2)));
@@ -1144,3 +1150,4 @@ void global_average_headingHandler(const std_msgs::String::ConstPtr& message)
 void local_average_headingHandler(const std_msgs::String::ConstPtr& message)
 {
 }
+//Change for Homework4 Question 2
